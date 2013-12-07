@@ -28,8 +28,7 @@ class NgFormValidationMixinTest(TestCase):
         self.assertEqual(len(middle_name), 1)
         attrib = dict(middle_name[0].attrib.items())
         self.assertNotIn('required', attrib)
-        self.assertDictContainsSubset(
-            {'ng-model': 'subscribe_data.middle_name'}, attrib)
+        self.assertDictContainsSubset({'ng-model': 'middle_name'}, attrib)
         self.assertDictContainsSubset({'ng-required': 'false'}, attrib)
 
     def test_regex(self):

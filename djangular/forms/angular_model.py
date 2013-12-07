@@ -32,7 +32,8 @@ class NgModelFormMixin(NgFormBaseMixin):
         self.prefix = kwargs.get('prefix')
         if self.prefix and kwargs.get('data'):
             kwargs['data'] = dict((self.add_prefix(name), value) for name, value in kwargs['data'].get(self.prefix).items())
-        for name, field in self.base_fields.items():
+        super(NgModelFormMixin, self).__init__(*args, **kwargs)
+        for name, field in self.fields.items():
             identifier = self.add_prefix(name)
             ng = {
                 'name': name,
@@ -43,7 +44,6 @@ class NgModelFormMixin(NgFormBaseMixin):
                 field.widget.attrs['ng-model'] = ng['model']
             for key, fmtstr in directives.items():
                 field.widget.attrs[key] = fmtstr % ng
-        super(NgModelFormMixin, self).__init__(*args, **kwargs)
 
     def full_clean(self):
         """
