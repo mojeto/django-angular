@@ -1,43 +1,47 @@
 # -*- coding: utf-8 -*-
 import copy
+from lxml import html
+
 from django.db import models
 from django import forms
 from django.test import TestCase
-from djangular.forms import NgModelFormMixin, AddPlaceholderFormMixin
 from pyquery.pyquery import PyQuery
-from lxml import html
+
+from djangular.forms import NgModelFormMixin, AddPlaceholderFormMixin
 
 
 CHOICES = (('a', 'Choice A'), ('b', 'Choice B'), ('c', 'Choice C'))
 
 
 class SubModel(models.Model):
-    select_choices = models.CharField(max_length=1, choices=CHOICES, default=CHOICES[0][0])
-    radio_choices = models.CharField(max_length=1, choices=CHOICES, default=CHOICES[1][0])
+    select_choices = models.CharField(max_length=1, choices=CHOICES,
+                                      default=CHOICES[0][0])
+    radio_choices = models.CharField(max_length=1, choices=CHOICES,
+                                     default=CHOICES[1][0])
     first_name = models.CharField(max_length=40, blank=True)
 
 
 class SubForm1(NgModelFormMixin, forms.ModelForm):
-    class Meta:
+    class Meta(object):
         model = SubModel
         widgets = {'radio_choices': forms.RadioSelect()}
 
 
 class SubForm2(NgModelFormMixin, forms.ModelForm):
-    class Meta:
+    class Meta(object):
         model = SubModel
         widgets = {'radio_choices': forms.RadioSelect()}
         ng_models = ['select_choices', 'first_name']
 
 
 class InvalidForm(NgModelFormMixin, forms.ModelForm):
-    class Meta:
+    class Meta(object):
         model = SubModel
         ng_models = {}
 
 
 class DummyForm(NgModelFormMixin, forms.Form):
-    email = forms.EmailField('E-Mail')
+    email = forms.EmailField(label='E-Mail')
     onoff = forms.BooleanField(initial=False, required=True)
     scope_prefix = 'dataroot'
 
@@ -61,7 +65,8 @@ class DummyForm(NgModelFormMixin, forms.Form):
             self.errors.update(self.sub1.errors)
         if not self.sub2.is_valid():
             self.errors.update(self.sub2.errors)
-        return super(DummyForm, self).is_valid() and self.sub1.is_valid() and self.sub2.is_valid()
+        return super(DummyForm, self).is_valid() and self.sub1.is_valid() and \
+            self.sub2.is_valid()
 
 
 class NgModelFormMixinTest(TestCase):
@@ -82,7 +87,8 @@ class NgModelFormMixinTest(TestCase):
     def setUp(self):
         # create an unbound form
         self.unbound_form = DummyForm()
-        htmlsource = self.unbound_form.as_p() + self.unbound_form.sub1.as_p() + self.unbound_form.sub2.as_p()
+        htmlsource = self.unbound_form.as_p() + self.unbound_form.sub1.as_p() \
+                     + self.unbound_form.sub2.as_p()
         self.dom = PyQuery(htmlsource)
         self.elements = self.dom('input') + self.dom('select')
         #print htmlsource
@@ -101,20 +107,25 @@ class NgModelFormMixinTest(TestCase):
             input_fields = [e for e in self.elements if e.name == identifier]
             self.assertTrue(input_fields)
             for input_field in input_fields:
-                self.assertIsInstance(input_field, (html.InputElement, html.SelectElement))
-                self.assertEqual(input_field.attrib.get('ng-class'), 'fieldClass(\'%s\')' % identifier)
+                self.assertIsInstance(input_field,
+                                      (html.InputElement, html.SelectElement))
+                self.assertEqual(input_field.attrib.get('ng-class'),
+                                 'fieldClass(\'%s\')' % identifier)
                 if identifier == 'sub2.radio_choices':
                     self.assertFalse(input_field.attrib.get('ng-model'))
                 else:
-                    model = '%s.%s' % (self.unbound_form.scope_prefix, identifier)
+                    model = '%s.%s' % (
+                        self.unbound_form.scope_prefix, identifier)
                     self.assertEqual(input_field.attrib.get('ng-model'), model)
-                if isinstance(input_field, html.InputElement) and input_field.type == 'radio':
+                if isinstance(input_field, html.InputElement) and \
+                                input_field.type == 'radio':
                     if input_field.tail.strip() == CHOICES[1][1]:
                         self.assertTrue(input_field.checked)
                     else:
                         self.assertFalse(input_field.checked)
                 elif isinstance(input_field, html.SelectElement):
-                    self.assertListEqual(input_field.value_options, [c[0] for c in CHOICES])
+                    self.assertListEqual(input_field.value_options,
+                                         [c[0] for c in CHOICES])
                     self.assertEqual(input_field.value, CHOICES[0][0])
 
     def test_valid_form(self):
@@ -177,10 +188,12 @@ class AddPlaceholderFormMixinTest(TestCase):
         email_field = self.dom('input[name=email]')
         self.assertEqual(len(email_field), 1)
         email_field_attrib = dict(email_field[0].attrib.items())
-        self.assertDictContainsSubset({'placeholder': 'E-Mail'}, email_field_attrib)
+        self.assertDictContainsSubset({'placeholder': 'E-Mail'},
+                                      email_field_attrib)
 
     def test_password_field(self):
         password_field = self.dom('input[name=password]')
         self.assertEqual(len(password_field), 1)
         email_field_attrib = dict(password_field[0].attrib.items())
-        self.assertDictContainsSubset({'placeholder': 'Password'}, email_field_attrib)
+        self.assertDictContainsSubset({'placeholder': 'Password'},
+                                      email_field_attrib)
